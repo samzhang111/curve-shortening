@@ -1,5 +1,57 @@
 import { shortenCurve, ChowGlickStepPoint, NSWStepPoint, JeckoLegerStepPoint, DziukStepPoint } from "./curveshortening-algorithms"
 
+import { abs, dot, add, subtract, complex, multiply, divide, norm, min, sqrt, cross } from "mathjs"
+
+function normalize(v, scaleBy) {
+    return multiply(scaleBy, divide(v, norm(v)))
+}
+
+function calculateA(point1, point2, point3) {
+    var padX = -min(point1[0], point2[0], point3[0], 0)
+    var padY = -min(point1[1], point2[1], point3[1], 0)
+
+    var p1c = complex({re: padX + point1[0], im: padY + point1[1]})
+    var p2c = complex({re: padX + point2[0], im: padY + point2[1]})
+    var p3c = complex({re: padX + point3[0], im: padY + point3[1]})
+
+    var e1 = subtract(p1c, p3c)
+    var e2 = subtract(p2c, p1c)
+    var e3 = subtract(p3c, p2c)
+
+    var sq1 = sqrt(e1)
+    var sq2 = sqrt(e2)
+    var sq3 = sqrt(e3)
+
+    var u1 = [sq1.re, sq2.re, sq3.re]
+    var v1 = [sq1.im, sq2.im, sq3.im]
+    var u2 = [-sq1.re, sq2.re, sq3.re]
+    var v2 = [-sq1.im, sq2.im, sq3.im]
+    var u3 = [sq1.re, -sq2.re, sq3.re]
+    var v3 = [sq1.im, -sq2.im, sq3.im]
+    var u4 = [sq1.re, sq2.re, -sq3.re]
+    var v4 = [sq1.im, sq2.im, -sq3.im]
+    var u5 = [-sq1.im, -sq2.im, sq3.im]
+    var v5 = [-sq1.re, -sq2.re, sq3.re]
+    var u6 = [-sq1.im, sq2.im, -sq3.im]
+    var v6 = [-sq1.re, sq2.re, -sq3.re]
+    var u7 = [sq1.im, -sq2.im, -sq3.im]
+    var v7 = [sq1.re, -sq2.re, -sq3.re]
+    var u8 = [-sq1.im, -sq2.im, -sq3.im]
+    var v8 = [-sq1.re, -sq2.re, -sq3.re]
+
+    var z1 = normalize(cross(u1, v1), 1)
+    var z2 = normalize(cross(u2, v2), 1)
+    var z3 = normalize(cross(u3, v3), 1)
+    var z4 = normalize(cross(u4, v4), 1)
+    var z5 = normalize(cross(u5, v5), 1)
+    var z6 = normalize(cross(u6, v6), 1)
+    var z7 = normalize(cross(u7, v7), 1)
+    var z8 = normalize(cross(u8, v8), 1)
+
+    return z7
+    //return [z1, z2, z3, z4, z5, z6, z7, z8]
+}
+
 function drawPointsUnitCircle(n, board, onDrag) {
     /* draw jsxgraph points on the unit circle */
 
@@ -32,6 +84,102 @@ function getPointDataCircular(points) {
 
 
 (function(){
+
+    /************
+     * sphere
+     ************/
+
+    var mathboxGrass = mathBox({
+      element: document.querySelector("#grassman"),
+      plugins: ['core', 'controls', 'cursor', 'mathbox'],
+      controls: {
+        // Orbit controls, i.e. Euler angles, with gimbal lock
+        klass: THREE.OrbitControls,
+
+        // Trackball controls, i.e. Free quaternion rotation
+        //klass: THREE.TrackballControls,
+      },
+      renderer: { parameters: { alpha: true } }
+    });
+
+    let threeGrass = mathboxGrass.three
+
+    threeGrass.renderer.setClearColor(new THREE.Color(0xFFFFFF), 1.0);
+    threeGrass.renderer.setClearAlpha(0);
+
+    var cameraGrass = mathboxGrass.camera({
+        proxy: true,
+        position: [1, 0.4, 1]
+    })
+    mathboxGrass.set('focus', 1);
+
+    var sizeGrass = 2;
+    const xminGrass = -sizeGrass;
+    const yminGrass = -sizeGrass;
+    const zminGrass = -sizeGrass;
+    const xmaxGrass = sizeGrass;
+    const ymaxGrass = sizeGrass;
+    const zmaxGrass = sizeGrass;
+
+    var viewGrass = mathboxGrass.cartesian({
+      range: [[xminGrass, xmaxGrass], [yminGrass, ymaxGrass], [zminGrass, zmaxGrass]],
+      scale: [1, 1, 1],
+    });
+
+    var colorsGrass = {
+        x: new THREE.Color(0xFF4136),
+        y: new THREE.Color(0x2ECC40),
+        z: new THREE.Color(0x0074D9),
+    };
+
+    var maxlen = 1000;
+    const r = 0.98
+
+    viewGrass.area({
+      width: 64,
+      height: 64,
+      rangeX: [0, 2*Math.PI],
+      rangeY: [0, Math.PI],
+      axes: [1, 3],
+      expr: function (emit, x, y, i, j, time) {
+          emit(r*Math.cos(x)*Math.sin(y), r*Math.sin(x)*Math.sin(y), r*Math.cos(y));
+      },
+      live: false,
+      items: 1,
+      channels: 3,
+      fps: 1,
+    }).surface({
+      opacity: 0.3,
+      lineX: true,
+      lineY: true,
+      color: "purple",
+      width: 3,
+      fill: false,
+    })
+
+    viewGrass.area({
+      width: 64,
+      height: 64,
+      rangeX: [0, Math.PI/2],
+      rangeY: [0, Math.PI/2],
+      axes: [1, 3],
+      expr: function (emit, x, y, i, j, time) {
+          emit(r*Math.cos(x)*Math.sin(y), r*Math.sin(x)*Math.sin(y), r*Math.cos(y));
+      },
+      live: false,
+      items: 1,
+      channels: 3,
+      fps: 1,
+    }).surface({
+      opacity: 0.5,
+      color: "blue",
+      fill: true,
+    })
+
+    /*********************
+     * Curve shortening main display
+     ********************/
+
     const size = 2;
     const xmin = -size;
     const ymin = -size;
@@ -140,6 +288,8 @@ function getPointDataCircular(points) {
     let mathboxShortenedCurve = mathbox2d.select('#shortenedCurve')
     let shortenedCurveDataSelectors = []
     let shortenedCurveSelectors = []
+    let grassDataSelectors = []
+    let grassSelectors = []
 
     let nullData3d = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
 
@@ -160,11 +310,72 @@ function getPointDataCircular(points) {
             join: 'round',
         });
 
+        viewGrass.array({
+            id: `grass${i}`,
+            data: [nullData3d[0]],
+            channels: 3,
+            live: false
+        })
+
+        viewGrass.point({
+            id: `grass${i}points`,
+            points: `#grass${i}`,
+            size: 5,
+            color: colorscale(i+1).hex(),
+        })
+
         shortenedCurveDataSelectors.push(mathbox2d.select(`#curve${i}`))
         shortenedCurveSelectors.push(mathbox2d.select(`#curve${i}line`))
+        grassDataSelectors.push(mathboxGrass.select(`#grass${i}`))
+        grassSelectors.push(mathboxGrass.select(`#grass${i}points`))
     }
 
+    let equilateral = []
+    for (let i = 0; i < 3; i++) {
+        let x = Math.cos(i/3 * 2 * Math.PI)
+        let y = Math.sin(i/3 * 2 * Math.PI)
+        
+        equilateral.push([x, y])
+    }
+    let equilateralProj = calculateA(...equilateral)
+    let equilateralProjNorm = normalize(equilateralProj, 1)
 
+    function geo(t) {
+            let u0 = abs(calculateA(shortenedCurves[0][0], shortenedCurves[0][1], shortenedCurves[0][2]))
+        if (isNaN(u0[0])) {
+            u0 = [1, 1, 1]
+        }
+            var u = normalize(u0, 1)
+            var v = equilateralProjNorm
+
+            var w0 = subtract(u, multiply(dot(u, v), v))
+            var w = normalize(w0, 1)
+
+            t = t*Math.acos(dot(u, v))
+
+            return [
+                Math.cos(t)*v[0] + Math.sin(t)*w[0],
+                Math.cos(t)*v[1] + Math.sin(t)*w[1],
+                Math.cos(t)*v[2] + Math.sin(t)*w[2],
+            ]
+    }
+
+    console.log({test: geo(1)})
+
+
+    var geodesic = viewGrass.interval({
+        channels: 3,
+        width: maxlen,
+        range: [0, 1],
+        expr: function(emit, x, i, t, delta) {
+            var g = geo(x)
+
+            emit(g[0], g[1], g[2])
+        },
+    }).line({
+        width: 5,
+        color: "yellow",
+    })
 
     function updateMathbox2dPlot() {
         let width = numNodesSlider.Value() + 1
@@ -195,8 +406,24 @@ function getPointDataCircular(points) {
                 join: 'round',
             });
 
+            viewGrass.array({
+                id: `grass${i}`,
+                data: [nullData3d[0]],
+                channels: 3,
+                live: false
+            })
+
+            viewGrass.point({
+                id: `grass${i}points`,
+                points: `#grass${i}`,
+                size: 5,
+                color: colorscale(i+1).hex(),
+            })
+
             shortenedCurveDataSelectors.push(mathbox2d.select(`#curve${i}`))
             shortenedCurveSelectors.push(mathbox2d.select(`#curve${i}line`))
+            grassDataSelectors.push(mathboxGrass.select(`#grass${i}`))
+            grassSelectors.push(mathboxGrass.select(`#grass${i}points`))
         }
 
         currentIterCap = Math.max(currentIterCap, shortenedCurves.length)
@@ -204,10 +431,14 @@ function getPointDataCircular(points) {
         for (let i = 0; i < shortenedCurves.length; i++) {
             shortenedCurveSelectors[i].set('width', width)
             shortenedCurveDataSelectors[i].set('data', shortenedCurves[i])
+
+            let grassPt = calculateA(shortenedCurves[i][0], shortenedCurves[i][1], shortenedCurves[i][2])
+            grassDataSelectors[i].set('data', [grassPt])
         }
 
         for (let j = shortenedCurves.length; j < currentIterCap; j++) {
             shortenedCurveDataSelectors[j].set('data', nullData3d)
+            grassDataSelectors[j].set('data', [nullData3d[0]])
         }
     }
 
@@ -225,7 +456,7 @@ function getPointDataCircular(points) {
         }
     });
 
-    let numNodesSlider = board.create('slider', [[-0.8, 1.3], [0.8, 1.3], [3, 10, 20]], {name:'# points', size: 7, label: {fontSize: 13}, snapWidth: 1, precision: 0});
+    let numNodesSlider = board.create('slider', [[-0.8, 1.3], [0.8, 1.3], [3, 3, 20]], {name:'# points', size: 7, label: {fontSize: 13}, snapWidth: 1, precision: 0});
     let deltaSlider = board.create('slider', [[-0.8, -1.3], [0.8, -1.3], [0.001, delta, 0.2]], {name:'delta', size: 7, label: {fontSize: 13}, snapWidth: 0.001, precision: 3});
     let numItersSlider = board.create('slider', [[-0.8, -1.5], [0.8, -1.5], [1, numIters, MAX_ITERS]], {name:'iters', size: 7, label: {fontSize: 13}, snapWidth: 1, precision: 0});
 
@@ -257,5 +488,6 @@ function getPointDataCircular(points) {
     })
 
     updateNumNodes()
+
 })()
 
