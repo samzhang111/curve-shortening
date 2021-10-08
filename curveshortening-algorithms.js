@@ -1,4 +1,17 @@
-import { add, subtract, complex, multiply } from "mathjs"
+import {
+  create,
+  addDependencies,
+  subtractDependencies,
+  complexDependencies,
+  multiplyDependencies
+} from 'mathjs'
+
+const {add, subtract, complex, multiply} = create({
+  addDependencies,
+  subtractDependencies,
+  complexDependencies,
+  multiplyDependencies
+}, {})
 
 
 const discreteNormal = (x1, x2, x3) => {

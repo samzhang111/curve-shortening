@@ -8,7 +8,7 @@ function drawPointsUnitCircle(n, board, onDrag) {
         let x = Math.cos(i/n * 2 * Math.PI)
         let y = Math.sin(i/n * 2 * Math.PI)
         
-        let point = board.create('point', [x, y], {name: i, size:2})
+        let point = board.create('point', [x, y], {name: i, size:5})
         point.on("drag", onDrag)
         points.push(point)
     }
@@ -44,7 +44,7 @@ function getPointDataCircular(points) {
     const mbxmin = xmin* 2
     const mbxmax = xmax* 2
 
-    let delta = 0.05
+    let delta = 0.1
     let numIters = 40
     let currentIterCap = numIters
     let MAX_ITERS = 100
@@ -73,7 +73,7 @@ function getPointDataCircular(points) {
 
     let camera = mathbox2d.camera({
         proxy: true,
-        position: [0, 0, 3]
+        position: [-0.5, -2, 3]
     })
     mathbox2d.set('focus', 1);
 
@@ -173,9 +173,9 @@ function getPointDataCircular(points) {
         mathboxShortenedCurve.set('width', width)
         currentCurve = pointData
 
-        //shortenedCurves = shortenCurve(ChowGlickStepPoint, currentCurve, delta, numIters)
+        shortenedCurves = shortenCurve(ChowGlickStepPoint, currentCurve, delta, numIters)
         //shortenedCurves = shortenCurve(DziukStepPoint, currentCurve, delta, numIters)
-        shortenedCurves = shortenCurve(NSWStepPoint, currentCurve, delta, numIters)
+        //shortenedCurves = shortenCurve(NSWStepPoint, currentCurve, delta, numIters)
         //shortenedCurves = shortenCurve(JeckoLegerStepPoint, currentCurve, delta, numIters)
         
         for (let i = currentIterCap; i < shortenedCurves.length; i++) {
